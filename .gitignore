@@ -1,0 +1,36 @@
+# Python virtual environment
+.venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Logs
+logs/
+*.log
+
+# Data outputs (raw, processed, mapped)
+data/raw/
+data/processed/
+data/mapped/
+
+# Model and tag outputs (if generated or large)
+Models/*.json
+Tags/created_tag_ids.json
+Tags/created_tags_log.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VSCode settings
+.vscode/
+
+# Environment variables and secrets
+.env
+
+# Memory bank is documentation, so do NOT ignore memory-bank/
+# Docs are source, so do NOT ignore docs/ 
