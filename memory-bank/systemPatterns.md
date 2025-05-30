@@ -1,21 +1,46 @@
 # System Patterns
 
 ## System Architecture
-- Modular Python scripts for data extraction, transformation, and management
+- SOLID-based Python pipeline for data extraction, transformation, and management
+- Component-based design with well-defined interfaces and abstractions
+- Clear separation of concerns across pipeline phases
 - JSON files as the primary data interchange and storage format
-- Directory structure separates models, tags, scripts, and logs
+- Improved directory structure organized by pipeline phase
 
 ## Key Technical Decisions
 - Use of Python for scripting due to its ecosystem and flexibility
+- Application of SOLID principles for maintainable, extensible code
+- Dependency injection for loose coupling and testability
 - JSON for human-readable, extensible data storage
-- Logging and versioning of data operations
+- Comprehensive logging and traceability throughout the pipeline
 
 ## Design Patterns
-- ETL (Extract, Transform, Load) for model/entity data
-- Script modularity: each script has a focused responsibility (e.g., extraction, sorting, mapping)
-- Separation of data (JSON) and logic (Python scripts)
+- Abstract Factory for creating pipeline components
+- Strategy Pattern for interchangeable algorithms (extractors, enrichers, etc.)
+- Dependency Injection for component wiring
+- Template Method for defining skeleton of pipeline phases
+- Observer Pattern for logging events across components
+- ETL (Extract, Transform, Load) workflow with discrete phases
 
 ## Component Relationships
-- Scripts operate on and produce JSON data files
-- Model/tag directories organize raw and processed data
-- Logs track seeding and transformation operations 
+```mermaid
+graph TD
+    A[Extractor] --> B[Enricher]
+    B --> C[TagMapper]
+    C --> D[ModelMapper]
+    D --> E[Seeder]
+    E --> F[Archiver]
+    subgraph Logging
+      L[Logger]
+    end
+    A -.-> L
+    B -.-> L
+    C -.-> L
+    D -.-> L
+    E -.-> L
+    F -.-> L
+```
+- Each component is a class/module with a single responsibility
+- Components interact through well-defined interfaces
+- Pipeline orchestrator wires up the components and manages workflow
+- Logger is injected into each phase for traceability 
