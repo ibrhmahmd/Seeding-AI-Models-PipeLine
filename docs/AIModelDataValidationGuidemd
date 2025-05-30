@@ -1,0 +1,126 @@
+# **Create Model Request - Validation Guidelines**
+
+Please follow these rules when submitting a request to create a new model:
+
+---
+
+### **Required Field**
+
+* **Name**
+
+  * Must not be empty
+  * Maximum 100 characters
+
+---
+
+### **Optional Fields & Their Rules**
+
+* **Description**
+
+  * Maximum 1000 characters
+
+* **Version**
+
+  * Maximum 50 characters
+
+* **Size**
+
+  * Maximum 50 characters
+
+* **License**
+
+  * Maximum 2000 characters
+
+* **Template** (if provided)
+
+  * Maximum 2000 characters
+
+* **ModelFile** (if provided)
+
+  * Maximum 2000 characters
+
+* **ReferenceLink** (if provided)
+
+  * Maximum 500 characters
+  * Must be a valid URL
+
+* **ImageUrl** (if provided)
+
+  * Maximum 500 characters
+  * Must be a valid URL
+
+* **Digest** (if provided)
+
+  * Maximum 200 characters
+
+* **Format** (if provided)
+
+  * Maximum 50 characters
+
+* **ParameterSize** (if provided)
+
+  * Maximum 50 characters
+
+* **QuantizationLevel** (if provided)
+
+  * Maximum 50 characters
+
+* **ParentModel** (if provided)
+
+  * Maximum 100 characters
+
+* **Family** (if provided)
+
+  * Maximum 100 characters
+
+* **Architecture** (if provided)
+
+  * Maximum 100 characters
+
+* **ParameterCount** (if provided)
+
+  * Must be greater than 0
+
+* **SizeLabel** (if provided)
+
+  * Maximum 50 characters
+
+* **ModelType** (if provided)
+
+  * Maximum 50 characters
+
+---
+
+### **Collections**
+
+* **Families** (if provided)
+
+  * Each entry must not be empty
+  * Maximum 100 characters per entry
+
+* **Languages** (if provided)
+
+  * Each entry must not be empty
+  * Maximum 50 characters per entry
+
+* **Tags** (if provided)
+
+  * Each tag must follow the rules defined in `AddTagRequestValidator` (see separate tag guidelines)
+
+---
+
+### **Special Case: FromOllama = true**
+
+If the model is coming from **Ollama**, then:
+
+* **Name** is **required**
+
+---
+
+### **URL Fields Note**
+
+* Valid URLs must be complete and include the protocol (e.g., `https://example.com`)
+
+---
+
+If you follow the above guidelines, your request should pass validation. Let us know if you need an example payload.

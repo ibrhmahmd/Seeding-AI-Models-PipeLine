@@ -13,7 +13,17 @@ This document outlines the step-by-step testing process for each phase of the AI
 
 ---
 
-## Phase 2: Tag Mapping & Seeding
+## Phase 2: Model Enrichment
+- **Goal:** Ensure all processed model files are enriched with Hugging Face (or dummy) metadata.
+- **Test:**
+  1. Run `scripts/enrich_with_hf_metadata.py`.
+  2. Check `data/enriched/` for enriched model JSON files.
+  3. Open a few files and verify that `description`, `referenceLink`, `imageUrl`, and `size` fields are present (with real or dummy data).
+  4. Review `logs/enrich_with_hf_metadata.log` for warnings or errors.
+
+---
+
+## Phase 3: Tag Mapping & Seeding
 - **Goal:** Ensure all missing tags are identified and can be seeded.
 - **Test:**
   1. Review `newly_missing_tags.txt` and copy its contents to `Tags/missing_tags.md`.
@@ -22,15 +32,15 @@ This document outlines the step-by-step testing process for each phase of the AI
 
 ---
 
-## Phase 3: Data Remapping (Model Mapping)
-- **Goal:** Ensure all processed model files reference valid tag IDs and match the API schema.
+## Phase 4: Data Remapping (Model Mapping)
+- **Goal:** Ensure all processed model files reference valid tag IDs and required fields.
 - **Test:**
   1. Run `scripts/map_to_api.py` (or re-run `ollama_data_extractor.py` if it remaps).
   2. Check that all model files in `data/processed/` have valid tag IDs and required fields.
 
 ---
 
-## Phase 4: Seeding Models
+## Phase 5: Seeding Models
 - **Goal:** Ensure models are seeded to the API and archived after success.
 - **Test:**
   1. Run `scripts/seed_models.py`.
@@ -39,7 +49,7 @@ This document outlines the step-by-step testing process for each phase of the AI
 
 ---
 
-## Phase 5: Reporting & Cleanup
+## Phase 6: Reporting & Cleanup
 - **Goal:** Ensure logs and archives are correct and the process is traceable.
 - **Test:**
   1. Review logs and archive contents.

@@ -11,8 +11,9 @@ headers = {
     "Authorization": f"Bearer {token}",
     "Content-Type": "application/json"
 }
-data_dir = "data/processed"
+data_dir = "data/mapped"
 log_file = "logs/seed_models_log.txt"
+archive_dir = "archive"
 
 # Function to seed a model via API
 def seed_model(payload):
@@ -48,6 +49,8 @@ with open(log_file, 'a') as log:
         print(message)
         log.write(message + "\n")
     else:
+        if not os.path.exists(archive_dir):
+            os.makedirs(archive_dir)
         for filename in os.listdir(data_dir):
             if filename.endswith(".json"):
                 filepath = os.path.join(data_dir, filename)
@@ -64,6 +67,10 @@ with open(log_file, 'a') as log:
 
                     if success:
                         successful_seeds += 1
+                        # Move file to archive
+                        archived_path = os.path.join(archive_dir, filename)
+                        os.rename(filepath, archived_path)
+                        log.write(f"  Archived: {archived_path}\n")
                     else:
                         failed_seeds += 1
 
