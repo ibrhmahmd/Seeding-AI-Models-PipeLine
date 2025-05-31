@@ -8,6 +8,7 @@ to the format expected by the API.
 
 import argparse
 import sys
+import os
 from pathlib import Path
 
 # Add the parent directory to the path so we can import pipeline modules
@@ -85,12 +86,8 @@ def main():
     # Create model mapper with additional options
     factory = PipelineFactory(logger=logger)
     model_mapper_kwargs = {
-        "logger": logger,
-        "validate_schema": args.validate_schema,
+        "logger": logger
     }
-    
-    if args.reference_url_prefix:
-        model_mapper_kwargs["reference_url_prefix"] = args.reference_url_prefix
     
     model_mapper = factory.create_model_mapper(args.model_mapper_type, **model_mapper_kwargs)
     

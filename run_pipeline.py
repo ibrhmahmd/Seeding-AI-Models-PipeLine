@@ -8,6 +8,7 @@ the AI Model Seeding Pipeline.
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Dict, Any
@@ -141,6 +142,41 @@ def parse_args():
         default="all",
         help="Run only the specified phase(s)"
     )
+    parser.add_argument(
+        "--skip-extract", 
+        action="store_true",
+        help="Skip the data extraction stage"
+    )
+    parser.add_argument(
+        "--skip-enrich", 
+        action="store_true",
+        help="Skip the data enrichment stage"
+    )
+    parser.add_argument(
+        "--skip-tag-map", 
+        action="store_true",
+        help="Skip the tag mapping stage"
+    )
+    parser.add_argument(
+        "--skip-model-map", 
+        action="store_true",
+        help="Skip the model mapping stage"
+    )
+    parser.add_argument(
+        "--skip-seed", 
+        action="store_true",
+        help="Skip the data seeding stage"
+    )
+    parser.add_argument(
+        "--skip-archive", 
+        action="store_true",
+        help="Skip the data archiving stage"
+    )
+    parser.add_argument(
+        "--continue-on-error", 
+        action="store_true",
+        help="Continue pipeline execution even if a stage fails"
+    )
     
     return parser.parse_args()
 
@@ -217,14 +253,24 @@ def build_pipeline_config(args) -> Dict[str, Any]:
     return pipeline_config
 
 
+def run_component(component, method, stage_name, logger):
+    try:
+        result = method(component)
+        logger.info(f"{stage_name.capitalize()} stage completed successfully")
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"{stage_name.capitalize()} stage failed: {e}")
+        return {"success": False, "error": {"message": str(e)}}
+
+
 def main():
     """Main entry point for the pipeline."""
     args = parse_args()
     
     # Configure logging
-    log_level = "DEBUG" if args.verbose else None
-    logger = get_logger("MainPipeline", level=log_level)
-    logger.info("Starting AI Model Seeding Pipeline")
+    log_level = "DEBUG" if args.verbose else "INFO"
+    logger = get_logger("MainPipeline")
+    logger.info(f"Starting AI model seeding pipeline (log level: {log_level})")
     
     # Build the pipeline configuration
     pipeline_config = build_pipeline_config(args)
@@ -233,49 +279,156 @@ def main():
     factory = PipelineFactory(logger=logger)
     pipeline = factory.create_pipeline(pipeline_config)
     
-    if args.dry_run:
-        logger.info("Dry run complete, pipeline assembled but not executed")
-        sys.exit(0)
+    summary = {}
     
-    # Run the pipeline
-    if args.phase == "all":
-        logger.info("Running complete pipeline")
-        result = pipeline.run(pipeline_config)
-    else:
-        logger.info(f"Running pipeline phase: {args.phase}")
-        input_data = {
-            "source_config": pipeline_config.get("source_config", {}),
-            "input_dir": pipeline_config.get(f"{args.phase}_dir"),
-            "output_dir": pipeline_config.get(f"{args.phase}_dir")
-        }
-        
-        if args.phase == "seed":
-            input_data["api_url"] = pipeline_config.get("api_url")
-            input_data["api_key"] = pipeline_config.get("api_key")
-        elif args.phase == "map_tags":
-            input_data["tag_map_file"] = pipeline_config.get("tag_map_file")
-            
-        result = pipeline.run_phase(args.phase, input_data)
-    
-    # Print results
-    if result["success"]:
-        logger.info("Pipeline execution completed successfully")
-        exit_code = 0
-    else:
-        error = result.get("error", {}).get("message", "Unknown error")
-        logger.error(f"Pipeline execution failed: {error}")
-        exit_code = 1
+    # Stage 1: Data Extraction
+    if not args.skip_extract:
+        logger.info("Running data extraction stage...")
+        extractor_type = os.environ.get("DEFAULT_EXTRACTOR_TYPE", "ollama")
+        extractor = factory.create_extractor(extractor_type, logger=logger)
+        source_config = {}
+        if extractor_type == "ollama":
+            source_config["use_cli"] = False
+            source_config["api_url"] = os.environ.get("OLLAMA_API_URL", "http://localhost:11434")
+            logger.info("Using Ollama API directly (CLI disabled)")
+        raw_data_dir = Path(os.environ.get("RAW_DATA_DIR", "./data/raw"))
+        result = run_component(
+            component=extractor,
+            method=lambda c: c.extract_from_source(source_config, raw_data_dir),
+            stage_name="extract",
+            logger=logger
+        )
+        if not result["success"]:
+            summary["extract"] = "Failed"
+            summary["overall"] = "Failed"
+            logger.error(f"Extraction stage failed: {result.get('error', 'Unknown error')}")
+            if not args.continue_on_error:
+                sys.exit(1)
+        else:
+            summary["extract"] = "Success"
+            logger.info("Data extraction completed successfully")
+
+    # Stage 2: Data Enrichment
+    if not args.skip_enrich and summary.get("extract", "Failed") == "Success":
+        logger.info("Running data enrichment stage...")
+        enricher_type = os.environ.get("DEFAULT_ENRICHER_TYPE", "default")
+        enricher = factory.create_enricher(enricher_type, logger=logger)
+        raw_data_dir = Path(os.environ.get("RAW_DATA_DIR", "./data/raw"))
+        enriched_data_dir = Path(os.environ.get("ENRICHED_DATA_DIR", "./data/enriched"))
+        result = run_component(
+            component=enricher,
+            method=lambda c: c.enrich_data(raw_data_dir, enriched_data_dir),
+            stage_name="enrich",
+            logger=logger
+        )
+        if not result["success"]:
+            summary["enrich"] = "Failed"
+            summary["overall"] = "Failed"
+            logger.error(f"Enrichment stage failed: {result.get('error', 'Unknown error')}")
+            if not args.continue_on_error:
+                sys.exit(1)
+        else:
+            summary["enrich"] = "Success"
+            logger.info("Data enrichment completed successfully")
+
+    # Stage 3: Tag Mapping
+    if not args.skip_tag_map and summary.get("enrich", "Failed") == "Success":
+        logger.info("Running tag mapping stage...")
+        tag_mapper_type = os.environ.get("DEFAULT_TAG_MAPPER_TYPE", "simple")
+        tag_mapper = factory.create_tag_mapper(tag_mapper_type, logger=logger)
+        enriched_data_dir = Path(os.environ.get("ENRICHED_DATA_DIR", "./data/enriched"))
+        processed_data_dir = Path(os.environ.get("PROCESSED_DATA_DIR", "./data/processed"))
+        result = run_component(
+            component=tag_mapper,
+            method=lambda c: c.map_tags(enriched_data_dir, processed_data_dir),
+            stage_name="tag_map",
+            logger=logger
+        )
+        if not result["success"]:
+            summary["tag_map"] = "Failed"
+            summary["overall"] = "Failed"
+            logger.error(f"Tag mapping stage failed: {result.get('error', 'Unknown error')}")
+            if not args.continue_on_error:
+                sys.exit(1)
+        else:
+            summary["tag_map"] = "Success"
+            logger.info("Tag mapping completed successfully")
+
+    # Stage 4: Model Mapping
+    if not args.skip_model_map and summary.get("tag_map", "Failed") == "Success":
+        logger.info("Running model mapping stage...")
+        model_mapper_type = os.environ.get("DEFAULT_MODEL_MAPPER_TYPE", "api")
+        model_mapper = factory.create_model_mapper(model_mapper_type, logger=logger)
+        processed_data_dir = Path(os.environ.get("PROCESSED_DATA_DIR", "./data/processed"))
+        mapped_data_dir = Path(os.environ.get("MAPPED_DATA_DIR", "./data/mapped"))
+        result = run_component(
+            component=model_mapper,
+            method=lambda c: c.map_models(processed_data_dir, mapped_data_dir),
+            stage_name="model_map",
+            logger=logger
+        )
+        if not result["success"]:
+            summary["model_map"] = "Failed"
+            summary["overall"] = "Failed"
+            logger.error(f"Model mapping stage failed: {result.get('error', 'Unknown error')}")
+            if not args.continue_on_error:
+                sys.exit(1)
+        else:
+            summary["model_map"] = "Success"
+            logger.info("Model mapping completed successfully")
+
+    # Stage 5: Data Seeding
+    if not args.skip_seed and summary.get("model_map", "Failed") == "Success":
+        logger.info("Running data seeding stage...")
+        seeder_type = os.environ.get("DEFAULT_SEEDER_TYPE", "mock")
+        seeder = factory.create_seeder(seeder_type, logger=logger)
+        mapped_data_dir = Path(os.environ.get("MAPPED_DATA_DIR", "./data/mapped"))
+        result = run_component(
+            component=seeder,
+            method=lambda c: c.seed_data(mapped_data_dir, dry_run=args.dry_run),
+            stage_name="seed",
+            logger=logger
+        )
+        if not result["success"]:
+            summary["seed"] = "Failed"
+            summary["overall"] = "Failed"
+            logger.error(f"Seeding stage failed: {result.get('error', 'Unknown error')}")
+            if not args.continue_on_error:
+                sys.exit(1)
+        else:
+            summary["seed"] = "Success"
+            logger.info("Data seeding completed successfully")
+
+    # Stage 6: Data Archiving
+    if not args.skip_archive and summary.get("seed", "Failed") == "Success":
+        logger.info("Running data archiving stage...")
+        archiver_type = os.environ.get("DEFAULT_ARCHIVER_TYPE", "file")
+        archiver = factory.create_archiver(archiver_type, logger=logger)
+        mapped_data_dir = Path(os.environ.get("MAPPED_DATA_DIR", "./data/mapped"))
+        archive_dir = Path(os.environ.get("ARCHIVE_DIR", "./archive"))
+        result = run_component(
+            component=archiver,
+            method=lambda c: c.archive_data(mapped_data_dir, archive_dir),
+            stage_name="archive",
+            logger=logger
+        )
+        if not result["success"]:
+            summary["archive"] = "Failed"
+            summary["overall"] = "Failed"
+            logger.error(f"Archiving stage failed: {result.get('error', 'Unknown error')}")
+        else:
+            summary["archive"] = "Success"
+            logger.info("Data archiving completed successfully")
     
     # Print summary
     print("\nPipeline execution summary:")
-    print(f"Status: {'Success' if result['success'] else 'Failed'}")
-    if "results" in result:
-        for phase, phase_result in result["results"].items():
-            success = phase_result.get("success", False)
-            status = "Success" if success else "Failed"
-            print(f"  {phase}: {status}")
+    print(f"Status: {'Success' if summary.get('overall', 'Failed') == 'Success' else 'Failed'}")
+    for stage, status in summary.items():
+        if stage != "overall":
+            print(f"  {stage}: {status}")
     
-    sys.exit(exit_code)
+    if summary.get("overall", "Failed") == "Failed":
+        sys.exit(1)
 
 
 if __name__ == "__main__":

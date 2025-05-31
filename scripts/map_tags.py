@@ -86,10 +86,8 @@ def main():
     # Create tag mapper with additional options
     factory = PipelineFactory(logger=logger)
     tag_mapper_kwargs = {
-        "logger": logger,
-        "auto_create_tags": args.auto_create
+        "logger": logger
     }
-    
     tag_mapper = factory.create_tag_mapper(args.tag_mapper_type, **tag_mapper_kwargs)
     
     logger.info(f"Mapping tags for models in {input_dir} and saving to {output_dir}")

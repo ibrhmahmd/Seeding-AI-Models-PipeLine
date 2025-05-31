@@ -1,12 +1,8 @@
 # Revised Data Collection and Mapping Strategy
 
-Based on the analysis of the provided Ollama API reference (`pasted_content.txt`) and the target API schema (`AIModelOperations`), the following strategy will be adopted for future data collection and seeding:
+the target API schema (`AIModelOperations`), the following strategy will be adopted for future data collection and seeding:
 
-## 1. Primary Data Source
-
-The primary source for model information will be the Ollama API, specifically the output of the command `ollama show --json <model_name>` executed within the sandbox environment. This provides rich, structured data directly from Ollama.
-
-## 2. Secondary Data Source
+## Data Source
 
 Fields not available in the `ollama show` output will be sourced externally using web searches, prioritizing:
     - Official Ollama library pages (`ollama.com/library/...`)

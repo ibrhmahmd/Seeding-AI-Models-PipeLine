@@ -231,33 +231,16 @@ class OllamaExtractor(BaseExtractor):
             # Process and save each model
             extracted_models = []
             for model in data['models']:
-                # Create a standardized model object
-                model_data = {
-                    "name": model.get('name', ''),
-                    "modelId": f"ollama-{model.get('name', '')}",
-                    "description": model.get('description', ''),
-                    "parameters": {},
-                    "tags": ["ollama"],
-                    "metadata": {
-                        "size": model.get('size', 0),
-                        "modified_at": model.get('modified_at', ''),
-                        "source": "ollama"
-                    }
-                }
+                # Save the complete raw model data from Ollama API directly
+                model_data = model  
                 
-                # Add appropriate tags based on model name
-                model_name = model.get('name', '').lower()
-                
-                if 'llama' in model_name:
-                    model_data['tags'].append('llama')
-                if 'mistral' in model_name:
-                    model_data['tags'].append('mistral')
-                if 'code' in model_name or 'codellama' in model_name:
-                    model_data['tags'].append('code')
-                    
-                # Write to file
-                output_file = out_dir / f"{model_data['name']}_raw.json"
+                # Sanitize model name for file name to avoid issues with special characters
+                model_name = model.get('name', 'unknown')
+                sanitized_model_name = model_name.replace(':', '_').replace('.', '_').replace('-', '_')
+                output_file = out_dir / f"{sanitized_model_name}_raw.json"
+                self.logger.info(f"Attempting to write model data to: {output_file}")
                 output_path = self.writer.write_model(model_data, output_file)
+                self.logger.info(f"Successfully wrote model data to: {output_path}")
                 extracted_models.append(output_path)
             
             self.logger.info(f"Extracted {len(extracted_models)} models from Ollama API")

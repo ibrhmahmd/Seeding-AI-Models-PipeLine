@@ -105,16 +105,59 @@ def main():
             source_config["input_dir"] = args.input_dir or str(config.data_dir / "input")
     
     # Determine output directory
-    output_dir = args.output_dir or str(config.raw_data_dir)
+    output_dir = Path(args.output_dir or str(config.raw_data_dir))
     
+    # Create output directory if it doesn't exist
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Created output directory: {output_dir}")
+    except Exception as e:
+        logger.error(f"Failed to create output directory {output_dir}: {str(e)}")
+        raise
+
     # Create and run extractor
     factory = PipelineFactory(logger=logger)
     extractor = factory.create_extractor(args.source_type, logger=logger)
+    source_config = {}
+    if args.source_type == "ollama":
+        source_config["use_cli"] = False  # Force API usage if CLI is not available
+        source_config["api_url"] = os.environ.get("OLLAMA_API_URL", "http://localhost:11434")
+        logger.info("Using Ollama API directly (CLI disabled)")
+    if args.input_dir and "input_dir" in source_config:
+        source_config["input_dir"] = args.input_dir or str(config.data_dir / "input")
+
+    # Determine output directory
+    output_dir = Path(args.output_dir or str(config.raw_data_dir))
     
     logger.info(f"Extracting from {args.source_type} source to {output_dir}")
     
     # Run extraction
-    result = extractor.extract_from_source(source_config, output_dir)
+    try:
+        result = extractor.extract_from_source(source_config, output_dir)
+        logger.info(f"Extraction result: {result}")
+        if result.get('success', False):
+            models = result.get('models', [])
+            logger.info(f"Retrieved {len(models)} models from Ollama API")
+            for model in models:
+                model_name = model.get('name', 'Unknown')
+                logger.info(f"Model: {model_name}")
+                # Sanitize model name for file writing
+                safe_model_name = model_name.replace(':', '_').replace('.', '_').replace('-', '_')
+                logger.info(f"Sanitized model name for file: {safe_model_name}")
+            raw_response = result.get('raw_response', {})
+            logger.info(f"Raw Ollama API response: {raw_response}")
+            if len(models) == 0:
+                logger.warning("No models data retrieved to write to files")
+            else:
+                logger.info("Data retrieved, should be written to files")
+            extracted_models = result.get('extracted_models', [])
+            logger.info(f"Attempted to write {len(extracted_models)} model files")
+            for path in extracted_models:
+                logger.info(f"Wrote model data to: {path}")
+    except Exception as e:
+        logger.error(f"Extraction failed: {str(e)}")
+        logger.exception("Detailed exception information:")
+        raise
     
     # Check result
     if result["success"]:
