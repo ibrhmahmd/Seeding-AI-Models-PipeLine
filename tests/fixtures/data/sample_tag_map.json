@@ -1,0 +1,22 @@
+{
+  "llama": 101,
+  "meta": 102,
+  "language-model": 103,
+  "open-source": 104,
+  "gpt": 105,
+  "proprietary": 106,
+  "openai": 107,
+  "mistral": 108,
+  "small": 109,
+  "medium": 110,
+  "large": 111,
+  "text-generation": 112,
+  "image-generation": 113,
+  "multimodal": 114,
+  "fine-tuned": 115,
+  "base-model": 116,
+  "embeddings": 117,
+  "rag": 118,
+  "chat": 119,
+  "instruct": 120
+}

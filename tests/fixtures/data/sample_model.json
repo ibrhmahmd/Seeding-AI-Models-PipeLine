@@ -1,0 +1,20 @@
+{
+  "name": "llama-2-7b",
+  "modelId": "llama-2-7b-meta",
+  "description": "Llama 2 is a collection of pretrained and fine-tuned generative text models ranging in scale from 7 billion to 70 billion parameters.",
+  "parameters": {
+    "temperature": 0.7,
+    "max_tokens": 2048,
+    "top_p": 0.9,
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0
+  },
+  "tags": ["llama", "meta", "language-model", "open-source"],
+  "metadata": {
+    "author": "Meta AI",
+    "release_date": "2023-07-18",
+    "license": "Llama 2 Community License",
+    "context_length": 4096,
+    "parameters": "7 billion"
+  }
+}
